@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>llm-scope Dashboard</title>
+<style>
+/* ================================================================
+   DESIGN SYSTEM — Dark industrial terminal aesthetic
+   ================================================================ */
+:root {
+  --bg-root:    #0d1117;
+  --bg-card:    #161b22;
+  --bg-card-hover: #1c2129;
+  --bg-hero:    #0f1318;
+  --bg-surface: #21262d;
+  --bg-input:   #0d1117;
+  --border:     #30363d;
+  --border-bright: #484f58;
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #6e7681;
+  --text-dim:       #484f58;
+
+  /* Waterfall colors */
+  --color-connect:    #58a6ff;
+  --color-ttft:       #f0883e;
+  --color-generation: #3fb950;
+  --color-proxy:      #484f58;
+
+  /* Provider badges */
+  --badge-deepseek: #3b82f6;
+  --badge-openai:   #10b981;
+  --badge-groq:     #f59e0b;
+  --badge-local:    #6e7681;
+  --badge-custom:   #a371f7;
+
+  /* Status */
+  --status-ok:      #3fb950;
+  --status-warn:    #d29922;
+  --status-error:   #f85149;
+  --status-cancel:  #6e7681;
+
+  /* TTFT health */
+  --ttft-fast:   #3fb950;
+  --ttft-normal: #d29922;
+  --ttft-slow:   #f85149;
+
+  /* Spacing */
+  --gap-xs:  4px;
+  --gap-sm:  8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+  --gap-xl: 24px;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+
+  /* Mono font stack (system, no CDN) */
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Liberation Mono', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-root);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: var(--gap-lg);
+  padding: var(--gap-md) var(--gap-xl);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sm);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.header-brand .logo { font-size: 20px; }
+.header-brand .version {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  padding: 1px 6px;
+  background: var(--bg-surface);
+  border-radius: 10px;
+}
+
+.header-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  transition: border-color 0.2s;
+}
+.stat-chip:hover { border-color: var(--border-bright); }
+.stat-chip .label { color: var(--text-muted); font-family: var(--font-sans); }
+.stat-chip .value { color: var(--text-primary); font-weight: 600; }
+.stat-chip .suffix { color: var(--text-dim); font-size: 10px; font-family: var(--font-sans); }
+.stat-chip.active .value { color: var(--status-ok); }
+.stat-chip.error .value { color: var(--status-error); }
+.stat-chip.cost .value  { color: var(--color-ttft); }
+.stat-chip.saved .value { color: var(--status-ok); }
+
+/* ================================================================
+   HERO WATERFALL
+   ================================================================ */
+.hero {
+  padding: var(--gap-xl);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-hero);
+  min-height: 120px;
+}
+
+.hero-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.hero-title {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  margin-bottom: var(--gap-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.hero-title .model-name {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.hero-waterfall {
+  display: flex;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--gap-sm);
+  background: var(--bg-surface);
+}
+
+.hero-waterfall .wf-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: rgba(255,255,255,0.9);
+  font-weight: 600;
+  transition: width 0.4s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.wf-connect    { background: var(--color-connect); }
+.wf-ttft       { background: var(--color-ttft); }
+.wf-generation { background: var(--color-generation); }
+.wf-proxy      { background: var(--color-proxy); min-width: 0; max-width: 4px; }
+
+.hero-labels {
+  display: flex;
+  gap: var(--gap-xl);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+.hero-labels span { display: inline-flex; align-items: center; gap: 4px; }
+.hero-labels .dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.dot-connect { background: var(--color-connect); }
+.dot-ttft    { background: var(--color-ttft); }
+.dot-gen     { background: var(--color-generation); }
+.dot-proxy   { background: var(--color-proxy); }
+
+.hero-metrics {
+  display: flex;
+  gap: var(--gap-xl);
+  margin-top: var(--gap-md);
+  padding-top: var(--gap-md);
+  border-top: 1px solid var(--border);
+}
+.hero-metric {
+  display: flex;
+  flex-direction: column;
+}
+.hero-metric .hm-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.hero-metric .hm-value {
+  font-size: 20px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.hero-metric .hm-value.fast   { color: var(--ttft-fast); }
+.hero-metric .hm-value.normal { color: var(--ttft-normal); }
+.hero-metric .hm-value.slow   { color: var(--ttft-slow); }
+
+/* ================================================================
+   CALL LIST
+   ================================================================ */
+.call-list-header {
+  display: grid;
+  grid-template-columns: 80px 90px 1fr 1fr 60px 1fr 80px 100px 80px;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) var(--gap-xl);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  position: sticky;
+  top: 48px;  /* below header */
+  z-index: 50;
+}
+
+#call-list {
+  padding-bottom: 40px;
+}
+
+.call-row {
+  display: grid;
+  grid-template-columns: 80px 90px 1fr 1fr 60px 1fr 80px 100px 80px;
+  gap: var(--gap-sm);
+  align-items: center;
+  padding: var(--gap-sm) var(--gap-xl);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  transition: background 0.15s;
+  cursor: default;
+}
+.call-row:hover {
+  background: var(--bg-card-hover);
+}
+.call-row.error-row {
+  background: rgba(248, 81, 73, 0.06);
+}
+.call-row.error-row:hover {
+  background: rgba(248, 81, 73, 0.12);
+}
+.call-row.cancel-row {
+  opacity: 0.6;
+}
+
+/* Fade-in animation for new rows */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.call-row.new-row {
+  animation: fadeSlideIn 0.35s ease-out;
+}
+
+/* Column styles */
+.col-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.col-provider {
+  display: flex;
+  align-items: center;
+}
+.provider-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  color: #fff;
+}
+.badge-deepseek { background: var(--badge-deepseek); }
+.badge-openai   { background: var(--badge-openai); }
+.badge-groq     { background: var(--badge-groq); }
+.badge-local    { background: var(--badge-local); }
+.badge-custom   { background: var(--badge-custom); }
+
+.col-model {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.col-model .rewrite {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.model-icons {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+  font-size: 11px;
+}
+
+.col-tag {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tag-badge {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.col-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-ok     { color: var(--status-ok); }
+.status-warn   { color: var(--status-warn); }
+.status-error  { color: var(--status-error); }
+.status-cancel { color: var(--status-cancel); }
+
+/* Waterfall mini-bars */
+.col-waterfall {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 14px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.col-waterfall .wf-seg {
+  height: 100%;
+  min-width: 1px;
+  transition: width 0.3s ease;
+}
+
+.col-total {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ttft-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ttft-fast   { background: var(--ttft-fast); }
+.ttft-normal { background: var(--ttft-normal); }
+.ttft-slow   { background: var(--ttft-slow); }
+
+.col-tokens {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+}
+.tokens-est {
+  font-style: italic;
+  color: var(--text-muted);
+}
+.ctx-warn {
+  display: inline-flex;
+  padding: 0px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--status-error);
+  color: #fff;
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+
+.col-cost {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.wf-error-inline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--status-error);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 6px;
+  border-left: 2px solid var(--status-error);
+}
+.col-waterfall.is-error {
+  background: transparent;
+}
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state .title { font-size: 16px; color: var(--text-secondary); margin-bottom: 8px; }
+.empty-state .hint { font-size: 12px; max-width: 420px; text-align: center; line-height: 1.7; }
+.empty-state code {
+  font-family: var(--font-mono);
+  background: var(--bg-surface);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+/* ================================================================
+   UTILITY + SCROLLBAR
+   ================================================================ */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-root); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  .call-list-header { display: none; }
+  .call-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap-sm);
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<div class="header">
+  <div class="header-brand">
+    <span class="logo">🔭</span>
+    <span>llm-scope</span>
+    <span class="version">v0.1.0</span>
+  </div>
+  <div class="header-stats">
+    <div class="stat-chip">
+      <span class="label">calls</span>
+      <span class="value" id="stat-calls">0</span>
+      <span class="suffix" id="stat-calls-suffix">(all time)</span>
+    </div>
+    <div class="stat-chip cost">
+      <span class="label">cost</span>
+      <span class="value" id="stat-cost">$0.00</span>
+      <span class="suffix">(today)</span>
+    </div>
+    <div class="stat-chip saved">
+      <span class="label">💰 saved</span>
+      <span class="value" id="stat-saved">$0.00</span>
+      <span class="suffix">(all time)</span>
+    </div>
+    <div class="stat-chip error" id="stat-errors-chip" style="display:none">
+      <span class="label">🔴 errors</span>
+      <span class="value" id="stat-errors">0</span>
+    </div>
+    <div class="stat-chip active">
+      <span class="label">🟢 active</span>
+      <span class="value" id="stat-active">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     HERO WATERFALL
+     ============================================================ -->
+<div class="hero" id="hero-section">
+  <div class="hero-empty" id="hero-empty">Waiting for first call…</div>
+  <div id="hero-content" style="display:none">
+    <div class="hero-title">
+      <span>LATEST CALL</span>
+      <span class="model-name" id="hero-model"></span>
+      <span id="hero-provider-badge"></span>
+    </div>
+    <div class="hero-waterfall" id="hero-waterfall"></div>
+    <div class="hero-labels">
+      <span><span class="dot dot-connect"></span> connect</span>
+      <span><span class="dot dot-ttft"></span> TTFT</span>
+      <span><span class="dot dot-gen"></span> generation</span>
+      <span><span class="dot dot-proxy"></span> proxy</span>
+    </div>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <span class="hm-label">TTFT</span>
+        <span class="hm-value" id="hero-ttft"></span>
+      </div>
+      <div class="hero-metric">
+        <span class="hm-label">Total</span>
+        <span class="hm-value" id="hero-total"></span>
+      </div>
+      <div class="hero-metric">
+        <span class="hm-label">Tokens</span>
+        <span class="hm-value" id="hero-tokens"></span>
+      </div>
+      <div class="hero-metric">
+        <span class="hm-label">Cost</span>
+        <span class="hm-value" id="hero-cost"></span>
+      </div>
+      <div class="hero-metric">
+        <span class="hm-label">Proxy</span>
+        <span class="hm-value" id="hero-proxy"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CALL LIST TABLE HEADER
+     ============================================================ -->
+<div class="call-list-header">
+  <span>Time</span>
+  <span>Provider</span>
+  <span>Model</span>
+  <span>Tag</span>
+  <span>Status</span>
+  <span>Waterfall</span>
+  <span>Total</span>
+  <span>Tokens</span>
+  <span style="text-align:right">Cost</span>
+</div>
+
+<!-- ============================================================
+     CALL LIST (rows inserted by JS)
+     ============================================================ -->
+<div id="call-list"></div>
+
+<!-- ============================================================
+     EMPTY STATE
+     ============================================================ -->
+<div class="empty-state" id="empty-state">
+  <div class="icon">🔭</div>
+  <div class="title">No calls recorded yet</div>
+  <div class="hint">
+    Point your LLM client at the proxy and make a request:<br><br>
+    <code>export OPENAI_BASE_URL=http://localhost:7070/v1</code><br><br>
+    or with curl:<br>
+    <code>curl -X POST http://localhost:7070/v1/chat/completions …</code>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   DASHBOARD CORE — zero-dependency incremental DOM update engine
+   ================================================================ */
+(function() {
+  'use strict';
+
+  // ---- State ----
+  const knownIds = new Set();
+  let maxTotalMs = 1;   // Normalization base for waterfall widths
+  let pollInterval = 5000;
+  let pollTimer = null;
+
+  // ---- Context windows for known models (for 85% warning) ----
+  const CONTEXT_WINDOWS = {
+    'deepseek-chat': 1000000, 'deepseek-reasoner': 1000000,
+    'gpt-4o': 128000, 'gpt-4o-mini': 128000,
+    'llama-3.3-70b-versatile': 128000, 'mixtral-8x7b-32768': 32768,
+  };
+
+  // ---- Provider badge colors ----
+  const PROVIDER_COLORS = {
+    deepseek: 'badge-deepseek', openai: 'badge-openai',
+    groq: 'badge-groq', local: 'badge-local', custom: 'badge-custom',
+  };
+
+  // ---- Helpers ----
+  function formatCost(v) {
+    if (!v || v < 0.000001) return '$0.00';
+    if (v < 0.01) return '$' + v.toFixed(6);
+    return '$' + v.toFixed(4);
+  }
+
+  function formatMs(ms) {
+    if (ms == null || ms === 0) return '0ms';
+    if (ms < 1000) return Math.round(ms) + 'ms';
+    return (ms / 1000).toFixed(1) + 's';
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const d = new Date(ts * 1000);
+    const now = Date.now();
+    const diff = (now - d.getTime()) / 1000;
+    if (diff < 5) return 'just now';
+    if (diff < 60) return Math.floor(diff) + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return d.toLocaleDateString();
+  }
+
+  function localTime(ts) {
+    if (!ts) return '';
+    return new Date(ts * 1000).toLocaleTimeString();
+  }
+
+  function ttftClass(ms) {
+    if (ms == null || ms <= 0) return '';
+    if (ms < 200) return 'fast';
+    if (ms <= 800) return 'normal';
+    return 'slow';
+  }
+
+  function ttftDotClass(ms) {
+    if (ms == null || ms <= 0) return '';
+    if (ms < 200) return 'ttft-fast';
+    if (ms <= 800) return 'ttft-normal';
+    return 'ttft-slow';
+  }
+
+  function statusClass(code) {
+    if (code === 499) return 'status-cancel';
+    if (code >= 200 && code < 300) return 'status-ok';
+    if (code >= 400 && code < 500) return 'status-warn';
+    return 'status-error';
+  }
+
+  function statusText(code, error) {
+    if (code === 499) return '⚠ 499';
+    if (error && code !== 200) {
+      const short = error.length > 30 ? error.substring(0, 30) + '…' : error;
+      return code + ' ' + short;
+    }
+    return String(code || '?');
+  }
+
+  function isToday(createdAt) {
+    if (!createdAt) return false;
+    const d = new Date(createdAt + 'Z');  // created_at is UTC from SQLite
+    const today = new Date();
+    return d.getUTCFullYear() === today.getUTCFullYear() &&
+           d.getUTCMonth() === today.getUTCMonth() &&
+           d.getUTCDate() === today.getUTCDate();
+  }
+
+  function hasToolCalls(body) {
+    if (!body) return false;
+    return body.includes('"tools"') || body.includes('"functions"');
+  }
+
+  function badgeClass(provider) {
+    return PROVIDER_COLORS[provider] || 'badge-custom';
+  }
+
+  // ---- Hero Waterfall Update ----
+  function updateHero(call) {
+    if (!call) return;
+    document.getElementById('hero-empty').style.display = 'none';
+    document.getElementById('hero-content').style.display = '';
+
+    document.getElementById('hero-model').textContent = call.model || '?';
+
+    const badge = document.getElementById('hero-provider-badge');
+    badge.className = 'provider-badge ' + badgeClass(call.provider);
+    badge.textContent = call.provider || '?';
+
+    const total = call.total_ms || 1;
+    const connect = call.connect_ms || 0;
+    const ttft = call.ttft_ms || 0;
+    const gen = call.generation_ms || 0;
+    const proxy = call.proxy_overhead_ms || 0;
+
+    const wfContainer = document.getElementById('hero-waterfall');
+    wfContainer.innerHTML = '';
+
+    function addSeg(cls, ms, label) {
+      const pct = Math.max(0.5, (ms / total * 100));
+      const el = document.createElement('div');
+      el.className = 'wf-seg ' + cls;
+      el.style.width = pct + '%';
+      if (pct > 8) el.textContent = label;
+      el.title = label;
+      wfContainer.appendChild(el);
+    }
+
+    addSeg('wf-connect', connect, formatMs(connect));
+    addSeg('wf-ttft', ttft, formatMs(ttft));
+    addSeg('wf-generation', gen, formatMs(gen));
+    if (proxy > 0) addSeg('wf-proxy', proxy, formatMs(proxy));
+
+    // TTFT
+    const ttftEl = document.getElementById('hero-ttft');
+    ttftEl.textContent = formatMs(ttft);
+    ttftEl.className = 'hm-value ' + ttftClass(ttft);
+
+    document.getElementById('hero-total').textContent = formatMs(total);
+
+    const pt = call.prompt_tokens || 0;
+    const ct = call.completion_tokens || 0;
+    const tokStr = call.is_estimated ? '~' + ct + ' (est.)' : pt + '+' + ct;
+    document.getElementById('hero-tokens').textContent = tokStr;
+    document.getElementById('hero-cost').textContent = formatCost(call.cost_usd);
+
+    const proxyEl = document.getElementById('hero-proxy');
+    proxyEl.textContent = formatMs(proxy);
+    proxyEl.style.color = proxy < 5 ? 'var(--status-ok)' : 'var(--status-warn)';
+  }
+
+  // ---- Build a call row ----
+  function createRow(call) {
+    const row = document.createElement('div');
+    row.className = 'call-row new-row';
+    row.id = 'row-' + call.id;
+    row.dataset.callId = call.id;
+
+    const sc = call.status_code || 0;
+    if (sc === 429 || sc === 503 || sc >= 500) row.classList.add('error-row');
+    if (sc === 499) row.classList.add('cancel-row');
+
+    populateRow(row, call);
+    return row;
+  }
+
+  function populateRow(row, call) {
+    const sc = call.status_code || 0;
+    const pt = call.prompt_tokens || 0;
+    const ct = call.completion_tokens || 0;
+    const total = call.total_ms || 0;
+    const connect = call.connect_ms || 0;
+    const ttft = call.ttft_ms || 0;
+    const gen = call.generation_ms || 0;
+    const proxy = call.proxy_overhead_ms || 0;
+    const endpoint = call.endpoint || '';
+    const isEmbed = endpoint.includes('embedding');
+
+    // ---- Waterfall width proportional to global max ----
+    const wfPct = maxTotalMs > 0 ? (total / maxTotalMs * 100) : 0;
+    const cPct = total > 0 ? (connect / total * wfPct) : 0;
+    const tPct = total > 0 ? (ttft / total * wfPct) : 0;
+    const gPct = total > 0 ? (gen / total * wfPct) : 0;
+
+    // ---- Icons ----
+    const typeIcon = isEmbed ? '📎' : '💬';
+    const imgIcon = call.has_image ? ' 🖼️' : '';
+    const toolIcon = hasToolCalls(call.request_body) ? ' 🔧' : '';
+
+    // ---- Model display ----
+    let modelDisplay = call.model || '?';
+    if (call.original_model && call.rewritten_model && call.original_model !== call.rewritten_model) {
+      modelDisplay = '<span class="rewrite">' + call.original_model + ' ➡️ </span>' + call.rewritten_model;
+    }
+
+    // ---- Tokens display ----
+    let tokHtml = '';
+    if (call.is_estimated) {
+      tokHtml = '<span class="tokens-est">~' + ct + ' (est.)</span>';
+    } else {
+      tokHtml = pt + '+' + ct;
+    }
+    tokHtml += toolIcon + imgIcon;
+
+    // ---- Context 85% warning ----
+    const ctxWindow = CONTEXT_WINDOWS[call.model] || 0;
+    if (ctxWindow > 0 && pt > ctxWindow * 0.85) {
+      tokHtml += ' <span class="ctx-warn">⚠️ 85% LIMIT!</span>';
+    }
+
+    // ---- Tag ----
+    const tagHtml = call.tag ? '<span class="tag-badge">' + escHtml(call.tag) + '</span>' : '';
+
+    // ---- Status ----
+    const stClass = statusClass(sc);
+    const stText = sc === 499 ? '⚠ 499' : String(sc || '?');
+
+    // ---- Error / Waterfall ----
+    let waterfallHtml = '';
+    let wfClass = 'col-waterfall';
+    if (call.error) {
+      wfClass += ' is-error';
+      const safeErr = escHtml(call.error);
+      waterfallHtml = '<div class="wf-error-inline" title="' + safeErr + '"> ' + safeErr + '</div>';
+    } else {
+      waterfallHtml = 
+        '<div class="wf-seg wf-connect" style="width:' + cPct + '%"></div>' +
+        '<div class="wf-seg wf-ttft" style="width:' + tPct + '%"></div>' +
+        '<div class="wf-seg wf-generation" style="width:' + gPct + '%"></div>';
+    }
+
+    row.innerHTML =
+      '<span class="col-time" title="' + localTime(call.timestamp) + '">' + timeAgo(call.timestamp) + '</span>' +
+      '<span class="col-provider"><span class="provider-badge ' + badgeClass(call.provider) + '">' + (call.provider || '?') + '</span></span>' +
+      '<span class="col-model">' + typeIcon + ' ' + modelDisplay + '</span>' +
+      '<span class="col-tag">' + tagHtml + '</span>' +
+      '<span class="col-status ' + stClass + '">' + stText + '</span>' +
+      '<span class="' + wfClass + '">' + waterfallHtml + '</span>' +
+      '<span class="col-total"><span class="ttft-dot ' + ttftDotClass(ttft) + '"></span> ' + formatMs(total) + '</span>' +
+      '<span class="col-tokens">' + tokHtml + '</span>' +
+      '<span class="col-cost">' + formatCost(call.cost_usd) + '</span>';
+
+    // Error line as next sibling (handled separately for DOM layout)
+    // Store error for external handling
+    row.dataset.error = call.error || '';
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+
+
+  // ---- Main poll & reconcile ----
+  async function poll() {
+    try {
+      const resp = await fetch('/api/calls?limit=50');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const calls = data.calls || [];
+      const activeRequests = data.active_requests || 0;
+
+      // Update header stats
+      document.getElementById('stat-active').textContent = activeRequests;
+      document.getElementById('stat-calls').textContent = calls.length;
+
+      // Calculate today's cost and error count and saved amount
+      let todayCost = 0;
+      let totalErrors = 0;
+      let totalSaved = 0;
+
+      for (const c of calls) {
+        if (isToday(c.created_at)) {
+          todayCost += (c.cost_usd || 0);
+        }
+        const sc = c.status_code || 200;
+        if (sc === 429 || sc === 503 || sc >= 500) totalErrors++;
+        // Saved from cache: simplified estimate
+        if (c.cached_tokens && c.cached_tokens > 0) {
+          totalSaved += c.cached_tokens * 1.0 / 1000000;  // rough estimate
+        }
+      }
+      document.getElementById('stat-cost').textContent = formatCost(todayCost);
+      document.getElementById('stat-saved').textContent = formatCost(totalSaved);
+
+      const errChip = document.getElementById('stat-errors-chip');
+      if (totalErrors > 0) {
+        errChip.style.display = '';
+        document.getElementById('stat-errors').textContent = totalErrors;
+      } else {
+        errChip.style.display = 'none';
+      }
+
+      // Empty state
+      const emptyState = document.getElementById('empty-state');
+      emptyState.style.display = calls.length === 0 ? '' : 'none';
+
+      if (calls.length === 0) {
+        // Adjust poll to slow
+        pollInterval = 5000;
+        scheduleNext();
+        return;
+      }
+
+      // Recalc global maxTotalMs for waterfall normalization
+      maxTotalMs = 1;
+      for (const c of calls) {
+        if ((c.total_ms || 0) > maxTotalMs) maxTotalMs = c.total_ms;
+      }
+
+      // Update hero with the latest call
+      updateHero(calls[0]);
+
+      // Build id→call lookup & ordered id list
+      const callMap = new Map();
+      const orderedIds = [];
+      for (const c of calls) {
+        callMap.set(c.id, c);
+        orderedIds.push(c.id);
+      }
+
+      const listEl = document.getElementById('call-list');
+      const existingIds = new Set();
+
+      // Collect current DOM row IDs in order
+      const domRows = listEl.querySelectorAll('.call-row');
+      for (const r of domRows) {
+        existingIds.add(r.dataset.callId);
+      }
+
+      // 1) Insert new rows (ids not in DOM)
+      for (let i = orderedIds.length - 1; i >= 0; i--) {
+        const id = orderedIds[i];
+        if (!existingIds.has(id)) {
+          const call = callMap.get(id);
+          const row = createRow(call);
+          listEl.prepend(row);
+          knownIds.add(id);
+
+          // Remove animation class after it finishes
+          setTimeout(() => row.classList.remove('new-row'), 400);
+        }
+      }
+
+      // 2) Update existing rows (status may have changed)
+      for (const r of listEl.querySelectorAll('.call-row')) {
+        const id = r.dataset.callId;
+        if (callMap.has(id)) {
+          const call = callMap.get(id);
+          populateRow(r, call);
+        }
+      }
+
+      // 3) Remove rows no longer in API response
+      for (const r of listEl.querySelectorAll('.call-row')) {
+        const id = r.dataset.callId;
+        if (!callMap.has(id)) {
+          r.remove();
+          knownIds.delete(id);
+        }
+      }
+
+      // Adjust poll interval: 1s when active, 5s otherwise
+      pollInterval = activeRequests > 0 ? 1000 : 5000;
+
+    } catch (err) {
+      console.warn('Poll error:', err);
+    }
+    scheduleNext();
+  }
+
+  function scheduleNext() {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = setTimeout(poll, pollInterval);
+  }
+
+  // ---- Bootstrap ----
+  poll();
+
+})();
+</script>
+
+</body>
+</html>
