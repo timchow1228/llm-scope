@@ -10,7 +10,7 @@ Are your API calls feeling sluggish, but you don't know if it's the DNS, TTFT, o
 
 ## Why llm-scope?
 
-- **Python Native & Zero Config:** `pip install llm-scope`, change one line (`base_url`), and you're done. 
+- **Python Native & Zero Config:** `pip install llm-scope-cli`, change one line (`base_url`), and you're done. 
 - **Prompt Cache Analytics:** Wondering if you should use `deepseek-v4-flash` or `deepseek-v4-pro`? `llm-scope` visualizes the TTFT difference and accurately calculates your **Prompt Cache Hit Savings 💰**. No more guesswork on your API bill.
 - **Microsecond Precision Waterfall:** Pinpoint precisely if latency is caused by TCP Handshake (`connect`), Prompt Processing (`TTFT`), or Decoding (`generation`).
 - **Physical Isolation:** We never upload your prompts to a cloud service. Unlike cloud tools (Helicone is now in maintenance mode post-acquisition), all your data is stored in a plain SQLite file locally at `~/.local/share/llm-scope/calls.db`.
@@ -20,7 +20,7 @@ Are your API calls feeling sluggish, but you don't know if it's the DNS, TTFT, o
 ## Installation
 
 ```bash
-pip install llm-scope
+pip install llm-scope-cli
 ```
 
 ## Quick Start

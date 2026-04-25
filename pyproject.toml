@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "llm-scope"
+name = "llm-scope-cli"
 version = "0.1.0"
 description = "Local debugger for LLM API calls — waterfall breakdown of TTFT, cost, and token speed"
 readme = "README.md"
@@ -31,8 +31,8 @@ llm-scope = "llm_scope.cli:main"
 devscope = "llm_scope.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/user/llm-scope"
-Repository = "https://github.com/user/llm-scope"
+Homepage = "https://github.com/timchow1228/llm-scope"
+Repository = "https://github.com/timchow1228/llm-scope"
 
 [tool.hatch.build.targets.wheel]
 packages = ["llm_scope"]
