@@ -140,7 +140,8 @@ async def api_get_call(call_id: str):
 
 
 @app.get("/v1/models")
-async def list_models():
+@app.get("/tag/{tag}/v1/models")
+async def list_models(tag: str = None):
     """Return an OpenAI-compatible model list for all known providers."""
     model_ids = []
     for provider_config in PROVIDERS.values():
