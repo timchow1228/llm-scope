@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llm-scope-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local debugger for LLM API calls — waterfall breakdown of TTFT, cost, and token speed"
 readme = "README.md"
 license = {text = "MIT"}

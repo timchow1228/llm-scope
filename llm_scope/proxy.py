@@ -304,7 +304,7 @@ async def proxy_chat_completions(request: Request, tag: str = None):
             prompt_tokens = usage.get("prompt_tokens", 0)
             completion_tokens = usage.get("completion_tokens", 0)
             cached_tokens = usage.get("prompt_cache_hit_tokens", 0)
-            cost = calc_cost(prompt_tokens, completion_tokens, model_config)
+            cost = calc_cost(prompt_tokens, completion_tokens, model_config, cached_tokens)
             if status_code != 200:
                 ct = upstream_resp.headers.get("content-type", "")
                 if "application/json" in ct:
@@ -436,7 +436,7 @@ async def proxy_chat_completions(request: Request, tag: str = None):
             except Exception:
                 pass
 
-            cost = calc_cost(prompt_tokens, completion_tokens, model_config)
+            cost = calc_cost(prompt_tokens, completion_tokens, model_config, cached_tokens)
             cost_str = f"${cost:.6f}" if cost > 0.000001 else "$0.00"
             tokens_str = (
                 f"~{completion_tokens} (est.)" if is_estimated

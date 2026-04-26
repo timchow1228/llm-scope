@@ -18,11 +18,13 @@ PROVIDERS: dict[str, dict] = {
         "models": {
             "deepseek-chat": {
                 "input_per_1m": 0.14,
+                "cache_per_1m": 0.014,
                 "output_per_1m": 0.28,
                 "context_window": 1_000_000,
             },
             "deepseek-reasoner": {
                 "input_per_1m": 0.14,
+                "cache_per_1m": 0.014,
                 "output_per_1m": 0.28,
                 "context_window": 1_000_000,
             },
@@ -171,21 +173,25 @@ def calc_cost(
     prompt_tokens: int,
     completion_tokens: int,
     model_config: dict,
+    cached_tokens: int = 0,
 ) -> float:
     """
-    Calculate the USD cost of a single API call.
-
-    Args:
-        prompt_tokens: Number of input tokens.
-        completion_tokens: Number of output tokens.
-        model_config: Dict with 'input_per_1m' and 'output_per_1m' keys.
-
-    Returns:
-        Cost in USD (float).
+    Calculate the USD cost of a single API call, considering cached tokens.
     """
     input_price = model_config.get("input_per_1m", DEFAULT_PRICING["input_per_1m"])
     output_price = model_config.get("output_per_1m", DEFAULT_PRICING["output_per_1m"])
-    return (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000
+    cache_price = model_config.get("cache_per_1m", input_price)
+
+    # In DeepSeek and others, prompt_tokens is the total input tokens.
+    uncached_tokens = max(0, prompt_tokens - cached_tokens)
+    
+    cost = (
+        uncached_tokens * input_price +
+        cached_tokens * cache_price +
+        completion_tokens * output_price
+    ) / 1_000_000
+    
+    return cost
 
 
 # ---------------------------------------------------------------------------
