@@ -106,7 +106,19 @@ async def health():
 async def api_get_calls(limit: int = 50):
     """Return the most recent N call records, plus the active request count."""
     rows = await get_calls(limit)
-    return {"calls": rows, "active_requests": _active_requests}
+    enriched = []
+    for r in rows:
+        d = dict(r)
+        cached_tok = d.get("cached_tokens") or 0
+        if cached_tok > 0:
+            _, _, config = resolve_provider(d.get("model", ""))
+            in_cost = config.get("input_per_1m", 1.0)
+            cache_cost = config.get("cache_per_1m", in_cost)
+            d["savings_usd"] = (in_cost - cache_cost) * cached_tok / 1_000_000.0
+        else:
+            d["savings_usd"] = 0.0
+        enriched.append(d)
+    return {"calls": enriched, "active_requests": _active_requests}
 
 
 @app.get("/api/calls/{call_id}/body")

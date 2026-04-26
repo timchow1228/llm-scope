@@ -903,9 +903,9 @@ html, body {
         }
         const sc = c.status_code || 200;
         if (sc === 429 || sc === 503 || sc >= 500) totalErrors++;
-        // Saved from cache: simplified estimate
-        if (c.cached_tokens && c.cached_tokens > 0) {
-          totalSaved += c.cached_tokens * 1.0 / 1000000;  // rough estimate
+        // Saved from cache utilizing backend-injected exact savings
+        if (c.savings_usd && c.savings_usd > 0) {
+          totalSaved += c.savings_usd;
         }
       }
       document.getElementById('stat-cost').textContent = formatCost(todayCost);
