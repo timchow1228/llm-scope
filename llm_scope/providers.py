@@ -28,6 +28,18 @@ PROVIDERS: dict[str, dict] = {
                 "output_per_1m": 0.28,
                 "context_window": 1_000_000,
             },
+            "deepseek-v4-flash": {
+                "input_per_1m": 0.14,
+                "cache_per_1m": 0.028,
+                "output_per_1m": 0.28,
+                "context_window": 1_000_000,
+            },
+            "deepseek-v4-pro": {
+                "input_per_1m": 0.435,
+                "cache_per_1m": 0.03625,
+                "output_per_1m": 0.87,
+                "context_window": 1_000_000,
+            },
         },
     },
     "openai": {
